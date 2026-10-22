@@ -1,7 +1,6 @@
-import { eventSource, event_types } from '../../../../script.js';
+import { eventSource, event_types, getRequestHeaders } from '../../../../script.js';
 import { updateWorldInfoList } from '../../../world-info.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../../extensions.js';
-import { eventSource, event_types, getRequestHeaders } from '../../../../script.js';
 
 // ==========================================
 // 1. CONSTANTES & CONFIGURATION
@@ -61,6 +60,21 @@ function showNotification(type, message, title = 'Simply-LoreAndTracker') {
     } else {
         console.log(`[${title}] (${type}): ${message}`);
     }
+}
+
+function getApiHeaders() {
+    const defaultHeaders = { 'Content-Type': 'application/json' };
+    try {
+        if (typeof getRequestHeaders === 'function') {
+            return { ...defaultHeaders, ...getRequestHeaders() };
+        }
+        if (typeof SillyTavern?.getContext === 'function' && typeof SillyTavern.getContext().getRequestHeaders === 'function') {
+            return { ...defaultHeaders, ...SillyTavern.getContext().getRequestHeaders() };
+        }
+    } catch (e) {
+        console.warn('[Simply-LoreAndTracker] Failed to retrieve CSRF headers:', e);
+    }
+    return defaultHeaders;
 }
 
 function parsePositionAndRole(val) {
@@ -137,10 +151,7 @@ async function fetchWorldInfoApi(lorebookName) {
     try {
         const response = await fetch('/api/worldinfo/get', {
             method: 'POST',
-            headers: {
-                ...getRequestHeaders(),
-                'Content-Type': 'application/json'
-            },
+            headers: getApiHeaders(),
             body: JSON.stringify({ name: lorebookName })
         });
         if (!response.ok) return null;
@@ -154,10 +165,7 @@ async function createWorldInfoApi(lorebookName) {
     try {
         const response = await fetch('/api/worldinfo/create', {
             method: 'POST',
-            headers: {
-                ...getRequestHeaders(),
-                'Content-Type': 'application/json'
-            },
+            headers: getApiHeaders(),
             body: JSON.stringify({ name: lorebookName })
         });
         const ok = response.ok;
@@ -175,10 +183,7 @@ async function saveWorldInfoApi(lorebookName, worldInfoData) {
     try {
         const response = await fetch('/api/worldinfo/edit', {
             method: 'POST',
-            headers: {
-                ...getRequestHeaders(),
-                'Content-Type': 'application/json'
-            },
+            headers: getApiHeaders(),
             body: JSON.stringify({ name: lorebookName, data: worldInfoData })
         });
         if (!response.ok) throw new Error(`HTTP error ${response.status}`);
@@ -700,7 +705,7 @@ jQuery(async () => {
             eventSource.on(swipeEvent, handleMessageEvent);
         }
 
-        setTimeout(updateUIState, 500);
+        setTimeout(updateUIState, 1000);
 
     } catch (err) {
         console.error('[Simply-LoreAndTracker] Initialization error:', err);
