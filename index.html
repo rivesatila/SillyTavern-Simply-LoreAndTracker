@@ -23,7 +23,7 @@
         </span>
       </div>
 
-      <!-- Action Button -->
+            <!-- Action Button -->
       <div class="menu_button margin-top-10" id="auto_memory_create_lb_btn" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; width: 100%; box-sizing: border-box; white-space: nowrap; font-size: 0.9em;">
         <i class="fa-solid fa-wand-magic-sparkles"></i> Synchronize / Create Entries
       </div>
@@ -41,6 +41,11 @@
           <label for="auto_memory_end_input">End (Msg #):</label>
           <input type="number" id="auto_memory_end_input" class="text_pole" placeholder="Blank = End" min="1" />
         </div>
+      </div>
+
+                  <!-- Harvest Button -->
+      <div class="menu_button margin-top-10" id="auto_memory_run_all_btn" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; width: 100%; box-sizing: border-box; white-space: nowrap; font-size: 0.9em;">
+        <i class="fa-solid fa-arrows-rotate"></i> Harvest Messages
       </div>
 
       <!-- Settings Order / Position / Depth -->
@@ -70,6 +75,12 @@
         </div>
       </div>
 
+            <!-- Option Budget -->
+      <div class="margin-top-10" style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="auto_memory_budget_checkbox" style="margin: 0;" />
+        <label for="auto_memory_budget_checkbox" style="margin: 0; cursor: pointer;">Ignore budget (bypass token limit)</label>
+      </div>
+
       <!-- Prefix & Tag -->
       <div style="display: flex; gap: 10px; margin-top: 8px;">
         <div style="flex: 1;">
@@ -90,18 +101,7 @@
         </div>
       </div>
       <textarea id="auto_memory_prompt_textarea" class="text_pole" rows="8" placeholder="System prompt instructions..." style="margin-top: 4px; width: 100%; box-sizing: border-box;"></textarea>
-      
-      <!-- Option Budget -->
-      <div class="margin-top-10" style="display: flex; align-items: center; gap: 8px;">
-        <input type="checkbox" id="auto_memory_budget_checkbox" style="margin: 0;" />
-        <label for="auto_memory_budget_checkbox" style="margin: 0; cursor: pointer;">Ignore budget (bypass token limit)</label>
-      </div>
-
-      <!-- Harvest Button -->
-      <div class="menu_button margin-top-10" id="auto_memory_run_all_btn" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; width: 100%; box-sizing: border-box; white-space: nowrap; font-size: 0.9em;">
-        <i class="fa-solid fa-arrows-rotate"></i> Harvest Messages
-      </div>
-
+ 
     </div>
   </div>
 </div>
