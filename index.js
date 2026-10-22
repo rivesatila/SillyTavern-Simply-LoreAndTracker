@@ -94,10 +94,13 @@ async function refreshSillyTavernWorldInfoList(lorebookName = null) {
             await SillyTavern.getContext().updateWorldInfoList();
         }
 
-        // Rechargement direct du panneau d'édition si la fiche ouverte correspond au Lorebook modifié
-        if (lorebookName && typeof selected_world_info !== 'undefined' && selected_world_info === lorebookName) {
-            if (typeof loadWorldInfo === 'function') {
-                await loadWorldInfo(lorebookName);
+        // Force le re-rendu visuel de l'éditeur World Info natif si le livre est actuellement sélectionné
+        const $wiSelect = $('#world_info_selection');
+        if ($wiSelect.length && lorebookName) {
+            if ($wiSelect.val() === lorebookName) {
+                $wiSelect.trigger('change');
+            } else {
+                $wiSelect.val(lorebookName).trigger('change');
             }
         }
     } catch (err) {
