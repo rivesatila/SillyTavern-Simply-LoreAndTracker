@@ -1,6 +1,7 @@
 import { eventSource, event_types } from '../../../../script.js';
 import { updateWorldInfoList } from '../../../world-info.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../../extensions.js';
+import { eventSource, event_types, getRequestHeaders } from '../../../../script.js';
 
 // ==========================================
 // 1. CONSTANTES & CONFIGURATION
@@ -136,7 +137,10 @@ async function fetchWorldInfoApi(lorebookName) {
     try {
         const response = await fetch('/api/worldinfo/get', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                ...getRequestHeaders(),
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({ name: lorebookName })
         });
         if (!response.ok) return null;
@@ -150,7 +154,10 @@ async function createWorldInfoApi(lorebookName) {
     try {
         const response = await fetch('/api/worldinfo/create', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                ...getRequestHeaders(),
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({ name: lorebookName })
         });
         const ok = response.ok;
@@ -168,7 +175,10 @@ async function saveWorldInfoApi(lorebookName, worldInfoData) {
     try {
         const response = await fetch('/api/worldinfo/edit', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                ...getRequestHeaders(),
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({ name: lorebookName, data: worldInfoData })
         });
         if (!response.ok) throw new Error(`HTTP error ${response.status}`);
