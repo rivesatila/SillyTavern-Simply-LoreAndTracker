@@ -1,5 +1,5 @@
 import { eventSource, event_types, getRequestHeaders } from '../../../../script.js';
-import { updateWorldInfoList } from '../../../world-info.js';
+import { updateWorldInfoList, loadWorldInfo, selected_world_info } from '../../../world-info.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../../extensions.js';
 
 // ==========================================
@@ -17,7 +17,7 @@ Format the final block exactly as follows (ensure a blank line before and after 
 
 [Your story text ends here]
 
- 
+- 
 
 📅 Date & Time: <Day, Date> · 🕒 <Time>
 📍 Location: <Current Place / Area>
@@ -27,7 +27,7 @@ Format the final block exactly as follows (ensure a blank line before and after 
 
 📝 Context Summary:
 💬 Message #{{lastMessageId}} <1-2 short sentences in English summarizing recent events and the latest exchange between {{user}} and {{char}}>
-
+- 
 
 [TRACKER RULES]
 - Grounding: Update date, time, location, and weather dynamically based on story progression.
@@ -86,15 +86,22 @@ function parsePositionAndRole(val) {
     return { position: parseInt(strVal, 10), role: 0 };
 }
 
-async function refreshSillyTavernWorldInfoList() {
+async function refreshSillyTavernWorldInfoList(lorebookName = null) {
     try {
         if (typeof updateWorldInfoList === 'function') {
             await updateWorldInfoList();
         } else if (typeof SillyTavern.getContext()?.updateWorldInfoList === 'function') {
             await SillyTavern.getContext().updateWorldInfoList();
         }
+
+        // Rechargement direct du panneau d'édition si la fiche ouverte correspond au Lorebook modifié
+        if (lorebookName && typeof selected_world_info !== 'undefined' && selected_world_info === lorebookName) {
+            if (typeof loadWorldInfo === 'function') {
+                await loadWorldInfo(lorebookName);
+            }
+        }
     } catch (err) {
-        console.warn('[Simply-LoreAndTracker] Could not refresh UI WorldInfo list:', err);
+        console.warn('[Simply-LoreAndTracker] Could not refresh UI WorldInfo list/view:', err);
     }
 }
 
@@ -170,7 +177,7 @@ async function createWorldInfoApi(lorebookName) {
         });
         const ok = response.ok;
         if (ok) {
-            await refreshSillyTavernWorldInfoList();
+            await refreshSillyTavernWorldInfoList(lorebookName);
         }
         return ok;
     } catch (err) {
@@ -190,7 +197,7 @@ async function saveWorldInfoApi(lorebookName, worldInfoData) {
         
         eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
         eventSource.emit('worldinfo_updated', lorebookName, worldInfoData);
-        await refreshSillyTavernWorldInfoList();
+        await refreshSillyTavernWorldInfoList(lorebookName);
         return true;
     } catch (err) {
         console.error(`[Simply-LoreAndTracker] Save error via API edit:`, err);
