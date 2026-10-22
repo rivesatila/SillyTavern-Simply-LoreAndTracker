@@ -1,0 +1,12 @@
+.auto-memory-settings {
+  padding: 5px;
+}
+.auto-memory-settings label {
+  margin-top: 8px;
+  display: block;
+  font-weight: bold;
+}
+.auto-memory-settings #auto_memory_run_all_btn {
+  width: 100%;
+  text-align: center;
+}

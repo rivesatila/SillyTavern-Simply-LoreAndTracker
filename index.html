@@ -1,0 +1,35 @@
+<div class="auto-memory-settings">
+  <div class="inline-drawer">
+    <div class="inline-drawer-toggle inline-drawer-header">
+      <b>Auto Memory Saver</b>
+      <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+    </div>
+    <div class="inline-drawer-content">
+      <div class="flex-container">
+        <label for="auto_memory_lorebook_input">Nom du Lorebook (fichier) :</label>
+        <input type="text" id="auto_memory_lorebook_input" class="text_pole" placeholder="Ex: MonLorebook" />
+
+        <label for="auto_memory_comment_input">Comment de l'entrée cible :</label>
+        <input type="text" id="auto_memory_comment_input" class="text_pole" value="actual scene" />
+
+        <label for="auto_memory_tag_input">Balise recherchée :</label>
+        <input type="text" id="auto_memory_tag_input" class="text_pole" value="Message #" placeholder="Ex: Message #" />
+
+        <div class="flex-container" style="flex-direction: row; gap: 10px;">
+          <div style="flex: 1;">
+            <label for="auto_memory_start_input">Début (Msg #) :</label>
+            <input type="number" id="auto_memory_start_input" class="text_pole" placeholder="Ex: 1" min="1" />
+          </div>
+          <div style="flex: 1;">
+            <label for="auto_memory_end_input">Fin (Msg #) :</label>
+            <input type="number" id="auto_memory_end_input" class="text_pole" placeholder="Vide = Fin" min="1" />
+          </div>
+        </div>
+
+        <div class="menu_button margin-top-10" id="auto_memory_run_all_btn">
+          <i class="fa-solid fa-arrows-rotate"></i> Récolter les messages de la plage
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
