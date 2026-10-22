@@ -1,4 +1,5 @@
 import { eventSource, event_types } from '../../../../script.js';
+import { updateWorldInfoList } from '../../../world-info.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../../extensions.js';
 
 // ==========================================
@@ -43,14 +44,14 @@ extension_settings[MODULE_NAME] = extension_settings[MODULE_NAME] || {
     startMsg: 1,
     endMsg: "",
     entryOrder: 100,
-    entryPosition: 6,
+    entryPositionSelect: "4-0",
     entryDepth: 4,
     ignoreBudget: false,
     harvestPrompt: DEFAULT_HARVEST_PROMPT
 };
 
 // ==========================================
-// 2. HELPER NOTIFICATION & PARSING
+// 2. HELPER NOTIFICATION, PARSING & API REST
 // ==========================================
 function showNotification(type, message, title = 'Simply-LoreAndTracker') {
     const toastrObj = window.toastr || (typeof toastr !== 'undefined' ? toastr : null);
@@ -58,6 +59,27 @@ function showNotification(type, message, title = 'Simply-LoreAndTracker') {
         toastrObj[type](message, title);
     } else {
         console.log(`[${title}] (${type}): ${message}`);
+    }
+}
+
+function parsePositionAndRole(val) {
+    const strVal = String(val ?? "4-0");
+    if (strVal.includes('-')) {
+        const parts = strVal.split('-');
+        return { position: parseInt(parts[0], 10), role: parseInt(parts[1], 10) };
+    }
+    return { position: parseInt(strVal, 10), role: 0 };
+}
+
+async function refreshSillyTavernWorldInfoList() {
+    try {
+        if (typeof updateWorldInfoList === 'function') {
+            await updateWorldInfoList();
+        } else if (typeof SillyTavern.getContext()?.updateWorldInfoList === 'function') {
+            await SillyTavern.getContext().updateWorldInfoList();
+        }
+    } catch (err) {
+        console.warn('[Simply-LoreAndTracker] Could not refresh UI WorldInfo list:', err);
     }
 }
 
@@ -131,7 +153,11 @@ async function createWorldInfoApi(lorebookName) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: lorebookName })
         });
-        return response.ok;
+        const ok = response.ok;
+        if (ok) {
+            await refreshSillyTavernWorldInfoList();
+        }
+        return ok;
     } catch (err) {
         console.error(`[Simply-LoreAndTracker] Fetch error during creation:`, err);
         return false;
@@ -149,6 +175,7 @@ async function saveWorldInfoApi(lorebookName, worldInfoData) {
         
         eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
         eventSource.emit('worldinfo_updated', lorebookName, worldInfoData);
+        await refreshSillyTavernWorldInfoList();
         return true;
     } catch (err) {
         console.error(`[Simply-LoreAndTracker] Save error via API edit:`, err);
@@ -157,8 +184,9 @@ async function saveWorldInfoApi(lorebookName, worldInfoData) {
 }
 
 function toggleDepthInput() {
-    const pos = parseInt($('#auto_memory_position_select').val(), 10);
-    const isAtD = [6, 7, 8].includes(pos);
+    const rawVal = $('#auto_memory_position_select').val();
+    const { position } = parsePositionAndRole(rawVal);
+    const isAtD = (position === 4);
     const depthInput = $('#auto_memory_depth_input');
     
     depthInput.prop('disabled', !isAtD);
@@ -184,10 +212,10 @@ function updateStatusDot(containerId, isOk) {
 
 function createSceneEntryTemplate(uid, comment) {
     const orderVal = parseInt(extension_settings[MODULE_NAME].entryOrder, 10);
-    const positionVal = parseInt(extension_settings[MODULE_NAME].entryPosition ?? 6, 10);
+    const { position: positionVal, role: roleVal } = parsePositionAndRole(extension_settings[MODULE_NAME].entryPositionSelect ?? "4-0");
     const rawDepth = parseInt(extension_settings[MODULE_NAME].entryDepth ?? 4, 10);
     
-    const isAtD = [6, 7, 8].includes(positionVal);
+    const isAtD = (positionVal === 4);
     const depthVal = isAtD ? (isNaN(rawDepth) ? 4 : rawDepth) : 0;
 
     return {
@@ -202,7 +230,8 @@ function createSceneEntryTemplate(uid, comment) {
         selectiveLogic: 0,
         addMemo: false,
         order: isNaN(orderVal) ? 100 : orderVal,
-        position: isNaN(positionVal) ? 6 : positionVal,
+        position: positionVal,
+        role: isAtD ? roleVal : 0,
         disable: false,
         ignoreBudget: !!extension_settings[MODULE_NAME].ignoreBudget,
         excludeRecursion: true,
@@ -226,10 +255,6 @@ function createSceneEntryTemplate(uid, comment) {
         matchWholeWords: null,
         useGroupScoring: null,
         automationId: "",
-        role: null,
-        sticky: null,
-        cooldown: null,
-        delay: null,
         triggers: [],
         displayIndex: uid,
         characterFilter: {
@@ -254,7 +279,8 @@ function createSystemPromptTemplate(uid) {
         selectiveLogic: 0,
         addMemo: false,
         order: 9999,
-        position: 6,
+        position: 4,
+        role: 0,
         disable: false,
         ignoreBudget: true,
         excludeRecursion: true,
@@ -278,10 +304,6 @@ function createSystemPromptTemplate(uid) {
         matchWholeWords: null,
         useGroupScoring: null,
         automationId: "",
-        role: null,
-        sticky: null,
-        cooldown: null,
-        delay: null,
         triggers: [],
         displayIndex: uid,
         characterFilter: {
@@ -312,7 +334,8 @@ function syncSystemPromptEntry(worldInfoData) {
     } else {
         systemEntry.content = extension_settings[MODULE_NAME].harvestPrompt || DEFAULT_HARVEST_PROMPT;
         systemEntry.order = 9999;
-        systemEntry.position = 6;
+        systemEntry.position = 4;
+        systemEntry.role = 0;
         systemEntry.depth = 0;
     }
 }
@@ -384,7 +407,6 @@ async function checkCharacterLorebook(forceCreate = false, isCharacterChange = f
         const saved = await saveWorldInfoApi(lorebookName, worldInfoData);
         if (saved) {
             worldInfoData = await fetchWorldInfoApi(lorebookName);
-            showNotification('success', `Lorebook "${lorebookName}" synchronized!`);
         }
     }
 
@@ -446,7 +468,10 @@ async function processMessage(messageText, messageId) {
     const markerIndex = messageText.search(regexMarker);
     const extractedBlock = messageText.substring(markerIndex).trim();
 
-    const targetData = await checkCharacterLorebook(true, false, false);
+    let targetData = await checkCharacterLorebook(false, false, false);
+    if (!targetData) {
+        targetData = await checkCharacterLorebook(true, false, false);
+    }
     if (!targetData) return false;
 
     const { lorebookName, worldInfoData } = targetData;
@@ -471,12 +496,13 @@ async function processMessage(messageText, messageId) {
     }
 
     const orderVal = parseInt(extension_settings[MODULE_NAME].entryOrder, 10);
-    const positionVal = parseInt(extension_settings[MODULE_NAME].entryPosition ?? 6, 10);
+    const { position: positionVal, role: roleVal } = parsePositionAndRole(extension_settings[MODULE_NAME].entryPositionSelect ?? "4-0");
     const rawDepth = parseInt(extension_settings[MODULE_NAME].entryDepth ?? 4, 10);
-    const isAtD = [6, 7, 8].includes(positionVal);
+    const isAtD = (positionVal === 4);
 
     targetEntry.order = isNaN(orderVal) ? 100 : orderVal;
-    targetEntry.position = isNaN(positionVal) ? 6 : positionVal;
+    targetEntry.position = positionVal;
+    targetEntry.role = isAtD ? roleVal : 0;
     targetEntry.depth = isAtD ? (isNaN(rawDepth) ? 4 : rawDepth) : 0;
     
     if (extension_settings[MODULE_NAME].ignoreBudget !== undefined) {
@@ -547,7 +573,7 @@ jQuery(async () => {
         $('#auto_memory_start_input').val(extension_settings[MODULE_NAME].startMsg || '');
         $('#auto_memory_end_input').val(extension_settings[MODULE_NAME].endMsg || '');
         $('#auto_memory_order_input').val(extension_settings[MODULE_NAME].entryOrder ?? 100);
-        $('#auto_memory_position_select').val(extension_settings[MODULE_NAME].entryPosition ?? 6);
+        $('#auto_memory_position_select').val(extension_settings[MODULE_NAME].entryPositionSelect ?? '4-0');
         $('#auto_memory_depth_input').val(extension_settings[MODULE_NAME].entryDepth ?? 4);
         $('#auto_memory_prompt_textarea').val(extension_settings[MODULE_NAME].harvestPrompt || DEFAULT_HARVEST_PROMPT);
         $('#auto_memory_budget_checkbox').prop('checked', !!extension_settings[MODULE_NAME].ignoreBudget);
@@ -591,7 +617,7 @@ jQuery(async () => {
         });
 
         $('#auto_memory_position_select').on('change', function () {
-            extension_settings[MODULE_NAME].entryPosition = $(this).val();
+            extension_settings[MODULE_NAME].entryPositionSelect = $(this).val();
             SillyTavern.getContext().saveSettingsDebounced();
             toggleDepthInput();
         });
@@ -625,7 +651,10 @@ jQuery(async () => {
         });
 
         $('#auto_memory_create_lb_btn').on('click', async () => {
-            await checkCharacterLorebook(true, false, false);
+            const res = await checkCharacterLorebook(true, false, false);
+            if (res) {
+                showNotification('success', `Lorebook "${res.lorebookName}" synchronized!`);
+            }
         });
 
         const handleCharacterSwitch = async () => {
