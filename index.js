@@ -17,7 +17,7 @@ Format the final block exactly as follows (ensure a blank line before and after 
 
 [Your story text ends here]
 
-- 
+ 
 
 📅 Date & Time: <Day, Date> · 🕒 <Time>
 📍 Location: <Current Place / Area>
@@ -27,7 +27,7 @@ Format the final block exactly as follows (ensure a blank line before and after 
 
 📝 Context Summary:
 💬 Message #{{lastMessageId}} <1-2 short sentences in English summarizing recent events and the latest exchange between {{user}} and {{char}}>
-- 
+
 
 [TRACKER RULES]
 - Grounding: Update date, time, location, and weather dynamically based on story progression.
