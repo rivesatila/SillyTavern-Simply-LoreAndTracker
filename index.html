@@ -1,35 +1,107 @@
 <div class="auto-memory-settings">
   <div class="inline-drawer">
     <div class="inline-drawer-toggle inline-drawer-header">
-      <b>Auto Memory Saver</b>
+      <b>Simply LoreAndTracker</b>
       <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
     </div>
     <div class="inline-drawer-content">
-      <div class="flex-container">
-        <label for="auto_memory_lorebook_input">Nom du Lorebook (fichier) :</label>
-        <input type="text" id="auto_memory_lorebook_input" class="text_pole" placeholder="Ex: MonLorebook" />
+      
+      <!-- Active Lorebook Name -->
+      <label for="auto_memory_current_lorebook">Active Lorebook Name:</label>
+      <input type="text" id="auto_memory_current_lorebook" class="text_pole" placeholder="e.g. slt_mem_CharacterName" />
 
-        <label for="auto_memory_comment_input">Comment de l'entrée cible :</label>
-        <input type="text" id="auto_memory_comment_input" class="text_pole" value="actual scene" />
+      <!-- Status Indicators -->
+      <div style="display: flex; gap: 8px; margin-top: 8px; font-size: 0.85em; align-items: center; justify-content: space-around; background: rgba(0,0,0,0.15); padding: 5px 8px; border-radius: 4px; white-space: nowrap;">
+        <span id="badge_lb_status" style="display: inline-flex; align-items: center; gap: 4px;">
+          <span class="status-dot" style="color: #ff5252;">●</span> Lorebook
+        </span>
+        <span id="badge_entry_status" style="display: inline-flex; align-items: center; gap: 4px;">
+          <span class="status-dot" style="color: #ff5252;">●</span> Scene Entry
+        </span>
+        <span id="badge_prompt_status" style="display: inline-flex; align-items: center; gap: 4px;">
+          <span class="status-dot" style="color: #ff5252;">●</span> System Prompt
+        </span>
+      </div>
 
-        <label for="auto_memory_tag_input">Balise recherchée :</label>
-        <input type="text" id="auto_memory_tag_input" class="text_pole" value="Message #" placeholder="Ex: Message #" />
+      <!-- Action Button -->
+      <div class="menu_button margin-top-10" id="auto_memory_create_lb_btn" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; width: 100%; box-sizing: border-box; white-space: nowrap; font-size: 0.9em;">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Synchronize / Create Entries
+      </div>
 
-        <div class="flex-container" style="flex-direction: row; gap: 10px;">
-          <div style="flex: 1;">
-            <label for="auto_memory_start_input">Début (Msg #) :</label>
-            <input type="number" id="auto_memory_start_input" class="text_pole" placeholder="Ex: 1" min="1" />
-          </div>
-          <div style="flex: 1;">
-            <label for="auto_memory_end_input">Fin (Msg #) :</label>
-            <input type="number" id="auto_memory_end_input" class="text_pole" placeholder="Vide = Fin" min="1" />
-          </div>
+      <label for="auto_memory_comment_input" class="margin-top-10">Target Entry Comment:</label>
+      <input type="text" id="auto_memory_comment_input" class="text_pole" value="actual scene" />
+
+      <!-- Message Range -->
+      <div style="display: flex; gap: 10px; margin-top: 8px;">
+        <div style="flex: 1;">
+          <label for="auto_memory_start_input">Start (Msg #):</label>
+          <input type="number" id="auto_memory_start_input" class="text_pole" placeholder="e.g. 1" min="1" />
         </div>
-
-        <div class="menu_button margin-top-10" id="auto_memory_run_all_btn">
-          <i class="fa-solid fa-arrows-rotate"></i> Récolter les messages de la plage
+        <div style="flex: 1;">
+          <label for="auto_memory_end_input">End (Msg #):</label>
+          <input type="number" id="auto_memory_end_input" class="text_pole" placeholder="Blank = End" min="1" />
         </div>
       </div>
+
+      <!-- Settings Order / Position / Depth -->
+      <div style="display: flex; gap: 10px; margin-top: 8px;">
+        <div style="flex: 1;">
+          <label for="auto_memory_order_input">Insertion Order:</label>
+          <input type="number" id="auto_memory_order_input" class="text_pole" value="100" />
+        </div>
+        <div style="flex: 1.5;">
+          <label for="auto_memory_position_select">Insertion Position:</label>
+          <select id="auto_memory_position_select" class="text_pole">
+            <option value="0">-↑ Char : Before Char Defs</option>
+            <option value="1">-↓ Char : After Char Defs</option>
+            <option value="2">-↑ EM : Before Example Messages</option>
+            <option value="3">-↓ EM : After Example Messages</option>
+            <option value="4">-↑ AM : Top Author's Note</option>
+            <option value="5">-↓ AM : Bottom Author's Note</option>
+            <option value="6" selected>@D⚙️ : as a system role message</option>
+            <option value="7">@D👤 : as a user role message</option>
+            <option value="8">@D🤖 : as an assistant role message</option>
+            <option value="9">Outlet : not injected automatically</option>
+          </select>
+        </div>
+        <div style="flex: 1;">
+          <label for="auto_memory_depth_input">Depth (if @D):</label>
+          <input type="number" id="auto_memory_depth_input" class="text_pole" value="4" min="0" />
+        </div>
+      </div>
+
+      <!-- Prefix & Tag -->
+      <div style="display: flex; gap: 10px; margin-top: 8px;">
+        <div style="flex: 1;">
+          <label for="auto_memory_prefix_input">Lorebook Prefix:</label>
+          <input type="text" id="auto_memory_prefix_input" class="text_pole" value="slt_mem_" placeholder="e.g. slt_mem_" />
+        </div>
+        <div style="flex: 1;">
+          <label for="auto_memory_tag_input">Target Tag:</label>
+          <input type="text" id="auto_memory_tag_input" class="text_pole" value="Message #" placeholder="e.g. Message #" />
+        </div>
+      </div>
+
+      <!-- Directive Prompt avec bouton Reset stylisé -->
+      <div class="margin-top-10" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <label for="auto_memory_prompt_textarea" style="margin: 0;">Extraction Directive Prompt:</label>
+        <div id="auto_memory_reset_prompt_btn" class="menu_button" style="padding: 2px 8px; font-size: 0.8em; margin: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Restore Default Prompt">
+          <i class="fa-solid fa-rotate-left"></i> Reset
+        </div>
+      </div>
+      <textarea id="auto_memory_prompt_textarea" class="text_pole" rows="8" placeholder="System prompt instructions..." style="margin-top: 4px; width: 100%; box-sizing: border-box;"></textarea>
+      
+      <!-- Option Budget -->
+      <div class="margin-top-10" style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="auto_memory_budget_checkbox" style="margin: 0;" />
+        <label for="auto_memory_budget_checkbox" style="margin: 0; cursor: pointer;">Ignore budget (bypass token limit)</label>
+      </div>
+
+      <!-- Harvest Button -->
+      <div class="menu_button margin-top-10" id="auto_memory_run_all_btn" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; width: 100%; box-sizing: border-box; white-space: nowrap; font-size: 0.9em;">
+        <i class="fa-solid fa-arrows-rotate"></i> Harvest Messages
+      </div>
+
     </div>
   </div>
 </div>
