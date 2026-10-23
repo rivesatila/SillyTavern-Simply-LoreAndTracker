@@ -155,7 +155,7 @@ Special thanks to the creators of the following extensions and presets whose wor
 
 * **[SillyTavern-MemoryBooks](https://github.com/aikohanasaki/SillyTavern-MemoryBooks)** by *aikohanasaki*: A beautiful and incredibly comprehensive extension that paved the way for advanced memory management, though slightly too complex for my day-to-day workflow.
 * **[SillyTavern-MessageSummarize](https://github.com/qvink/SillyTavern-MessageSummarize)** by *qvink*: A brilliant concept for auto-summarization, which motivated me to build a system where harvested summaries could be directly structured and edited inside native Lorebook entries.
-* **[SillyTavern-ScenePulse](https://github.com/xenofei/SillyTavern-ScenePulse)** by *xenofei*: Brought the crucial idea of combining RP generation and tracking into a single LLM pass, even if I ran into technical bugs on my specific setup.
+* **[SillyTavern-ScenePulse](https://github.com/xenofei/SillyTavern-ScenePulse)** by *xenofei*: Brought the crucial idea of combining RP generation and tracking into a single LLM pass.
 * **@codesyazzz**: For the original concept behind the final status block layout from their **Gemma-4 Advance Immersive ERP Chat** preset (64K+ context). Without this prompt structure, this extension would simply not exist!
 
 ---
