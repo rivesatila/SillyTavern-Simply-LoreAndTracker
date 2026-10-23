@@ -47,7 +47,7 @@ extension_settings[MODULE_NAME] = extension_settings[MODULE_NAME] || {
     entryPositionSelect: "4-0",
     entryDepth: 4,
     ignoreBudget: false,
-    enableDirectivePrompt: true,
+    disableConstraint: true,
     harvestPrompt: DEFAULT_HARVEST_PROMPT
 };
 
@@ -336,7 +336,7 @@ function createSceneEntryTemplate(uid, comment) {
 
 function createSystemPromptTemplate(uid) {
     const promptText = extension_settings[MODULE_NAME].harvestPrompt || DEFAULT_HARVEST_PROMPT;
-    const isEnabled = extension_settings[MODULE_NAME].enableDirectivePrompt !== false;
+    const isEnabled = extension_settings[MODULE_NAME].disableConstraint;
     return {
         uid: uid,
         key: [],
@@ -407,7 +407,7 @@ function syncSystemPromptEntry(worldInfoData) {
         systemEntry.position = 4;
         systemEntry.role = 0;
         systemEntry.depth = 0;
-        systemEntry.disable = !isEnabled;
+        systemEntry.disable = extension_settings[MODULE_NAME].disableConstraint;
     }
 }
 
@@ -648,6 +648,7 @@ jQuery(async () => {
         $('#auto_memory_depth_input').val(extension_settings[MODULE_NAME].entryDepth ?? 4);
         $('#auto_memory_prompt_textarea').val(extension_settings[MODULE_NAME].harvestPrompt || DEFAULT_HARVEST_PROMPT);
         $('#auto_memory_budget_checkbox').prop('checked', !!extension_settings[MODULE_NAME].ignoreBudget);
+        $('#auto_memory_enable_prompt_checkbox').prop('checked', !!extension_settings[MODULE_NAME].disableConstraint);
 
         toggleDepthInput();
 
@@ -714,6 +715,11 @@ jQuery(async () => {
 
         $('#auto_memory_budget_checkbox').on('change', function () {
             extension_settings[MODULE_NAME].ignoreBudget = $(this).is(':checked');
+            SillyTavern.getContext().saveSettingsDebounced();
+        });
+        
+       $('#auto_memory_enable_prompt_checkbox').on('change', function () {
+            extension_settings[MODULE_NAME].disableConstraint = $(this).is(':checked');
             SillyTavern.getContext().saveSettingsDebounced();
         });
 

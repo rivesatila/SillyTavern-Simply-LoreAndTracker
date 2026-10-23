@@ -56,7 +56,7 @@
         </div>
         <div style="flex: 1.5;">
           <label for="auto_memory_position_select" title="Prompt insertion target position in the prompt building sequence.">Insertion Position:</label>
-          <select id="auto_memory_position_select" class="text_pole" title="Prompt insertion target position in the prompt building sequence.">
+          <select id="auto_memory_position_select" class="text_pole" title="Prompt insertion target position in the prompt building sequence. [Best : @D⚙️ as systeme]">
             <option value="0">-↑ Char : Before Char Defs</option>
             <option value="1">-↓ Char : After Char Defs</option>
             <option value="5">-↑ EM : Before Example Messages</option>
@@ -71,7 +71,7 @@
         </div>
         <div style="flex: 1;">
           <label for="auto_memory_depth_input" title="Injection depth (number of messages from bottom) when position is set to At Depth (@D).">Depth (if @D):</label>
-          <input type="number" id="auto_memory_depth_input" class="text_pole" value="4" min="0" title="Injection depth (number of messages from bottom) when position is set to At Depth (@D)." />
+          <input type="number" id="auto_memory_depth_input" class="text_pole" value="4" min="0" title="Injection depth (number of messages from bottom) when position is set to At Depth (@D). [Best 2 - 4]" />
         </div>
       </div>
 
@@ -96,7 +96,7 @@
       <!-- Directive Prompt avec Checkbox d'activation & bouton Reset -->
       <div class="margin-top-10" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
         <div style="display: flex; align-items: center; gap: 6px;">
-          <input type="checkbox" id="auto_memory_enable_prompt_checkbox" style="margin: 0;" title="Active or disabled to keep so you can create and use a custom general constraint." />
+          <input type="checkbox" id="auto_memory_enable_prompt_checkbox" style="margin: 0;" title="Active or disabled to keep so you can create and use a custom general directive." />
           <label for="auto_memory_enable_prompt_checkbox" style="margin: 0; cursor: pointer;" title="Directive system prompt injected into the LLM context to enforce tracker generation at the end of every reply. You can customize this prompt, but ensure it keeps the {{lastMessageId}} tag—the extension relies on this exact marker to locate and extract the summary block.">Extraction Directive Prompt</label>
         </div>
         <div id="auto_memory_reset_prompt_btn" class="menu_button" style="padding: 2px 8px; font-size: 0.8em; margin: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Reset the directive prompt to its original factory template.">
