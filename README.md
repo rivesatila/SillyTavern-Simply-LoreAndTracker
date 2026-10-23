@@ -51,3 +51,7 @@ Les solutions classiques de mémoire pour SillyTavern (comme QvinkMemory ou les 
 📝 Context Summary:
 💬 Message #{{lastMessageId}} Short summary of the latest exchange...
 - -
+
+
+best position for memmory is @D⚙️ : as a system role message avec Depth 2 à 4
+or -↑ AM : Top Author's Note

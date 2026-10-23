@@ -1,6 +1,7 @@
 import { eventSource, event_types, getRequestHeaders } from '../../../../script.js';
-import { updateWorldInfoList, loadWorldInfo, selected_world_info } from '../../../world-info.js';
+import { updateWorldInfoList, loadWorldInfo, selected_world_info, saveWorldInfo} from '../../../world-info.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../../extensions.js';
+
 
 // ==========================================
 // 1. CONSTANTES & CONFIGURATION
@@ -53,6 +54,28 @@ extension_settings[MODULE_NAME] = extension_settings[MODULE_NAME] || {
 // ==========================================
 // 2. HELPER NOTIFICATION, PARSING & API REST
 // ==========================================
+
+let wiModule = null;
+async function getWiApi() {
+    if (!wiModule) {
+        try { 
+            wiModule = await import('../../../world-info.js'); 
+        } catch (e) { 
+            wiModule = {}; 
+            console.warn('[Simply-LoreAndTracker] Impossible d\'importer world-info.js', e); 
+        }
+    }
+    const c = SillyTavern.getContext();
+    return {
+        loadWorldInfo: c.loadWorldInfo || wiModule.loadWorldInfo,
+        saveWorldInfo: c.saveWorldInfo || wiModule.saveWorldInfo,
+        updateWorldInfoList: c.updateWorldInfoList || wiModule.updateWorldInfoList,
+        reloadEditor: c.reloadWorldInfoEditor || wiModule.reloadEditor
+    };
+}
+
+
+
 function showNotification(type, message, title = 'Simply-LoreAndTracker') {
     const toastrObj = window.toastr || (typeof toastr !== 'undefined' ? toastr : null);
     if (toastrObj && typeof toastrObj[type] === 'function') {
@@ -178,32 +201,48 @@ async function createWorldInfoApi(lorebookName) {
             headers: getApiHeaders(),
             body: JSON.stringify({ name: lorebookName })
         });
-        const ok = response.ok;
-        if (ok) {
-            await refreshSillyTavernWorldInfoList(lorebookName);
+        
+        if (response.ok) {
+            const api = await getWiApi();
+            // Actualise le menu déroulant avec le nouveau fichier
+            if (typeof api.updateWorldInfoList === 'function') {
+                await api.updateWorldInfoList();
+            }
         }
-        return ok;
+        return response.ok;
     } catch (err) {
-        console.error(`[Simply-LoreAndTracker] Fetch error during creation:`, err);
+        console.error(`[Simply-LoreAndTracker] Erreur de création :`, err);
         return false;
     }
 }
 
 async function saveWorldInfoApi(lorebookName, worldInfoData) {
     try {
-        const response = await fetch('/api/worldinfo/edit', {
-            method: 'POST',
-            headers: getApiHeaders(),
-            body: JSON.stringify({ name: lorebookName, data: worldInfoData })
-        });
-        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+        const api = await getWiApi();
         
-        eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
-        eventSource.emit('worldinfo_updated', lorebookName, worldInfoData);
-        await refreshSillyTavernWorldInfoList(lorebookName);
+        if (typeof api.saveWorldInfo === 'function') {
+            // Utilise la fonction native qui gère l'API et les événements internes
+            // Le dernier paramètre `false` évite parfois un rechargement forcé lourd de toute la liste
+            await api.saveWorldInfo(lorebookName, worldInfoData, false);
+        } else {
+            // Fallback si vraiment la fonction native est introuvable
+            const response = await fetch('/api/worldinfo/edit', {
+                method: 'POST',
+                headers: getApiHeaders(),
+                body: JSON.stringify({ name: lorebookName, data: worldInfoData })
+            });
+            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+            eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
+        }
+
+        // Met à jour l'UI proprement et sans conflit
+        if (typeof api.reloadEditor === 'function') {
+            api.reloadEditor(lorebookName);
+        }
+
         return true;
     } catch (err) {
-        console.error(`[Simply-LoreAndTracker] Save error via API edit:`, err);
+        console.error(`[Simply-LoreAndTracker] Erreur de sauvegarde :`, err);
         return false;
     }
 }
