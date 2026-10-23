@@ -237,7 +237,9 @@ async function saveWorldInfoApi(lorebookName, worldInfoData) {
             body: JSON.stringify({ name: lorebookName, data: worldInfoData })
         });
         if (typeof eventSource !== 'undefined' && event_types?.WORLDINFO_UPDATED) {
-                eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
+            eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
+            eventSource.emit('worldinfo_updated', lorebookName, worldInfoData);
+            await refreshSillyTavernWorldInfoList();
             }
         if (!response.ok) throw new Error(`HTTP error ${response.status}`);
 
@@ -333,6 +335,8 @@ function createSceneEntryTemplate(uid, comment) {
         }
     };
 }
+
+
 
 function createSystemPromptTemplate(uid) {
     const promptText = extension_settings[MODULE_NAME].harvestPrompt || DEFAULT_HARVEST_PROMPT;
