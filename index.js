@@ -6,7 +6,7 @@ import { extension_settings, renderExtensionTemplateAsync } from '../../../exten
 // 1. CONSTANTES & CONFIGURATION
 // ==========================================
 const MODULE_NAME = "simply_lore_and_tracker";
-const SYSTEM_PROMPT_COMMENT = "*Extraction Directive Prompt*";
+const SYSTEM_PROMPT_COMMENT = "***ST_SYSTEM_PROMPT_TRACKER***";
 
 const DEFAULT_HARVEST_PROMPT = `[END BLOCK TRACKER]
 At the VERY END of every output, after all roleplay text and narration, you MUST generate the status and summary block.
@@ -47,7 +47,6 @@ extension_settings[MODULE_NAME] = extension_settings[MODULE_NAME] || {
     entryPositionSelect: "4-0",
     entryDepth: 4,
     ignoreBudget: false,
-    enableDirectivePrompt: true,
     harvestPrompt: DEFAULT_HARVEST_PROMPT
 };
 
@@ -215,23 +214,26 @@ async function saveWorldInfoApi(lorebookName, worldInfoData) {
     try {
         const api = await getWiApi();
         
-        const response = await fetch('/api/worldinfo/edit', {
-            method: 'POST',
-            headers: getApiHeaders(),
-            body: JSON.stringify({ name: lorebookName, data: worldInfoData })
-        });
-        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-
-        if (typeof api.loadWorldInfo === 'function') {
-            await api.loadWorldInfo(lorebookName);
+        // 1. Écriture (Mémoire/Disque)
+        if (typeof api.saveWorldInfo === 'function') {
+            await api.saveWorldInfo(lorebookName, worldInfoData, false);
+        } else {
+            const response = await fetch('/api/worldinfo/edit', {
+                method: 'POST',
+                headers: getApiHeaders(),
+                body: JSON.stringify({ name: lorebookName, data: worldInfoData })
+            });
+            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
         }
 
+        // 2. Événements globaux & rafraîchissement des listes
         if (typeof eventSource !== 'undefined' && event_types?.WORLDINFO_UPDATED) {
             eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
             eventSource.emit('worldinfo_updated', lorebookName, worldInfoData);
         }
         await refreshSillyTavernWorldInfoList();
 
+        // 3. Rechargement du panneau d'édition si ouvert
         if (typeof api.reloadEditor === 'function') {
             api.reloadEditor(lorebookName);
         }
@@ -327,7 +329,6 @@ function createSceneEntryTemplate(uid, comment) {
 
 function createSystemPromptTemplate(uid) {
     const promptText = extension_settings[MODULE_NAME].harvestPrompt || DEFAULT_HARVEST_PROMPT;
-    const isEnabled = extension_settings[MODULE_NAME].enableDirectivePrompt !== false;
     return {
         uid: uid,
         key: [],
@@ -342,7 +343,7 @@ function createSystemPromptTemplate(uid) {
         order: 9999,
         position: 4,
         role: 0,
-        disable: !isEnabled,
+        disable: false,
         ignoreBudget: true,
         excludeRecursion: true,
         preventRecursion: true,
@@ -382,14 +383,11 @@ function syncSystemPromptEntry(worldInfoData) {
 
     for (const key in worldInfoData.entries) {
         const entry = worldInfoData.entries[key];
-        if (entry && (entry.comment === SYSTEM_PROMPT_COMMENT || entry.comment === "***ST_SYSTEM_PROMPT_TRACKER***")) {
+        if (entry && entry.comment === SYSTEM_PROMPT_COMMENT) {
             systemEntry = entry;
-            systemEntry.comment = SYSTEM_PROMPT_COMMENT;
             break;
         }
     }
-
-    const isEnabled = extension_settings[MODULE_NAME].enableDirectivePrompt !== false;
 
     if (!systemEntry) {
         const newKey = generateSequentialKey(worldInfoData.entries);
@@ -401,7 +399,6 @@ function syncSystemPromptEntry(worldInfoData) {
         systemEntry.position = 4;
         systemEntry.role = 0;
         systemEntry.depth = 0;
-        systemEntry.disable = !isEnabled;
     }
 }
 
@@ -482,7 +479,7 @@ async function checkCharacterLorebook(forceCreate = false, isCharacterChange = f
             const c = worldInfoData.entries[k]?.comment;
             if (c) {
                 if (c.toLowerCase().trim() === targetComment) entryExists = true;
-                if (c === SYSTEM_PROMPT_COMMENT || c === "***ST_SYSTEM_PROMPT_TRACKER***") promptExists = true;
+                if (c === SYSTEM_PROMPT_COMMENT) promptExists = true;
             }
         }
         lbExists = entryExists || promptExists;
@@ -571,6 +568,7 @@ async function harvestAllMessages() {
         return;
     }
 
+    // 1. Récupération / Création du lorebook UNE SEULE FOIS au départ
     let targetData = await checkCharacterLorebook(false, false, false);
     if (!targetData) {
         targetData = await checkCharacterLorebook(true, false, false);
@@ -624,6 +622,7 @@ async function harvestAllMessages() {
     let count = 0;
     let currentContent = targetEntry.content || "";
 
+    // 2. Accumulation pure en mémoire sans aucun appel API dans la boucle
     for (let i = startIndex; i < endIndex; i++) {
         const msg = chat[i];
         const textContent = msg?.mes || msg?.text;
@@ -640,6 +639,7 @@ async function harvestAllMessages() {
         }
     }
 
+    // 3. Sauvegarde unique et rafraîchissement global à la toute fin
     if (count > 0) {
         targetEntry.content = currentContent;
         await saveWorldInfoApi(lorebookName, worldInfoData);
@@ -659,90 +659,19 @@ jQuery(async () => {
         const template = await renderExtensionTemplateAsync('third-party/SillyTavern-Simply-LoreAndTracker', 'index');
         $('#extensions_settings').append(template);
 
-        // Tooltips en anglais pour les champs de saisie
-        $('#auto_memory_prefix_input')
-            .val(extension_settings[MODULE_NAME].prefix || 'slt_mem_')
-            .attr('title', 'Name or comment of the current scene/arc (e.g. "1 - Beginning", "2 - In the tavern"). Summaries will be appended here.');
-
-        $('#auto_memory_comment_input')
-            .val(extension_settings[MODULE_NAME].targetComment || 'actual scene')
-            .attr('title', 'Prefix to distinguish generated memory lorebooks from standard ones. Used for automatic lorebook detection. Can be left empty.');
-
-        $('#auto_memory_tag_input')
-            .val(extension_settings[MODULE_NAME].targetTag || 'Message #')
-            .attr('title', 'Marker tag indicating the exact starting point from which the memory block is extracted (default: Message #).');
-
-        $('#auto_memory_start_input')
-            .val(extension_settings[MODULE_NAME].startMsg || '')
-            .attr('title', 'First message number in history to include during harvesting. Usefull when you begin new scene');
-
-        $('#auto_memory_end_input')
-            .val(extension_settings[MODULE_NAME].endMsg || '')
-            .attr('title', 'Last message number to harvest (leave empty to scan until current last message).');
-
-        $('#auto_memory_order_input')
-            .val(extension_settings[MODULE_NAME].entryOrder ?? 100)
-            .attr('title', 'Context insertion priority. Higher values give greater weight and precedence when ordering entries.');
-
-        $('#auto_memory_position_select')
-            .val(extension_settings[MODULE_NAME].entryPositionSelect ?? '4-0')
-            .attr('title', 'Prompt insertion target best for memory -as system-.');
-
-        $('#auto_memory_depth_input')
-            .val(extension_settings[MODULE_NAME].entryDepth ?? 4)
-            .attr('title', 'Injection depth (number of messages from bottom) when position is set to At Depth.  Best 3 or 4');
-
-        $('#auto_memory_prompt_textarea')
-            .val(extension_settings[MODULE_NAME].harvestPrompt || DEFAULT_HARVEST_PROMPT)
-            .attr('title', 'Directive system prompt injected into the LLM context to enforce tracker generation at the end of every reply. You can customize this prompt, but ensure it keeps the <Target Tag: + {{lastMessageId}} > (default: Message #{{lastMessageId}}) tag—the extension relies on this exact marker to locate and extract the summary block..');
-
-        $('#auto_memory_budget_checkbox')
-            .prop('checked', !!extension_settings[MODULE_NAME].ignoreBudget)
-            .attr('title', 'Bypass context token budget limits to ensure this memory entry is never truncated.');
-
-        // Tooltip et liaison de la Checkbox Directive Prompt
-        const $enablePromptCheckbox = $('#auto_memory_enable_prompt_checkbox');
-        if ($enablePromptCheckbox.length) {
-            $enablePromptCheckbox
-                .prop('checked', extension_settings[MODULE_NAME].enableDirectivePrompt !== false)
-                .attr('title', 'Enable to send the extraction directive prompt to the LLM, or disable to keep it as a silent reference.');
-
-            $enablePromptCheckbox.on('change', function () {
-                extension_settings[MODULE_NAME].enableDirectivePrompt = $(this).is(':checked');
-                SillyTavern.getContext().saveSettingsDebounced();
-                checkCharacterLorebook(true, false, false);
-            });
-        }
-
-        // Tooltips des boutons
-        $('#auto_memory_reset_prompt_btn')
-            .attr('title', 'Reset the directive prompt to its original factory template.')
-            .on('click', function () {
-                $('#auto_memory_prompt_textarea').val(DEFAULT_HARVEST_PROMPT);
-                extension_settings[MODULE_NAME].harvestPrompt = DEFAULT_HARVEST_PROMPT;
-                SillyTavern.getContext().saveSettingsDebounced();
-                checkCharacterLorebook(false, false, false);
-                showNotification('info', "Default directive prompt restored.");
-            });
-
-        $('#auto_memory_run_all_btn')
-            .attr('title', 'Scan full chat history and aggregate all summary blocks into the lorebook in one batch.')
-            .on('click', async () => {
-                await harvestAllMessages();
-            });
-
-        $('#auto_memory_create_lb_btn')
-            .attr('title', 'Force creation or synchronization of the character lorebook and its internal entries.')
-            .on('click', async () => {
-                const res = await checkCharacterLorebook(true, false, false);
-                if (res) {
-                    showNotification('success', `Lorebook "${res.lorebookName}" synchronized!`);
-                }
-            });
+        $('#auto_memory_prefix_input').val(extension_settings[MODULE_NAME].prefix || 'slt_mem_');
+        $('#auto_memory_comment_input').val(extension_settings[MODULE_NAME].targetComment || 'actual scene');
+        $('#auto_memory_tag_input').val(extension_settings[MODULE_NAME].targetTag || 'Message #');
+        $('#auto_memory_start_input').val(extension_settings[MODULE_NAME].startMsg || '');
+        $('#auto_memory_end_input').val(extension_settings[MODULE_NAME].endMsg || '');
+        $('#auto_memory_order_input').val(extension_settings[MODULE_NAME].entryOrder ?? 100);
+        $('#auto_memory_position_select').val(extension_settings[MODULE_NAME].entryPositionSelect ?? '4-0');
+        $('#auto_memory_depth_input').val(extension_settings[MODULE_NAME].entryDepth ?? 4);
+        $('#auto_memory_prompt_textarea').val(extension_settings[MODULE_NAME].harvestPrompt || DEFAULT_HARVEST_PROMPT);
+        $('#auto_memory_budget_checkbox').prop('checked', !!extension_settings[MODULE_NAME].ignoreBudget);
 
         toggleDepthInput();
 
-        // Événements d'inputs
         $('#auto_memory_prefix_input').on('input', function () {
             extension_settings[MODULE_NAME].prefix = $(this).val();
             SillyTavern.getContext().saveSettingsDebounced();
@@ -796,9 +725,28 @@ jQuery(async () => {
             checkCharacterLorebook(false, false, false);
         });
 
+        $('#auto_memory_reset_prompt_btn').on('click', function () {
+            $('#auto_memory_prompt_textarea').val(DEFAULT_HARVEST_PROMPT);
+            extension_settings[MODULE_NAME].harvestPrompt = DEFAULT_HARVEST_PROMPT;
+            SillyTavern.getContext().saveSettingsDebounced();
+            checkCharacterLorebook(false, false, false);
+            showNotification('info', "Default directive prompt restored.");
+        });
+
         $('#auto_memory_budget_checkbox').on('change', function () {
             extension_settings[MODULE_NAME].ignoreBudget = $(this).is(':checked');
             SillyTavern.getContext().saveSettingsDebounced();
+        });
+
+        $('#auto_memory_run_all_btn').on('click', async () => {
+            await harvestAllMessages();
+        });
+
+        $('#auto_memory_create_lb_btn').on('click', async () => {
+            const res = await checkCharacterLorebook(true, false, false);
+            if (res) {
+                showNotification('success', `Lorebook "${res.lorebookName}" synchronized!`);
+            }
         });
 
         const handleCharacterSwitch = async () => {
