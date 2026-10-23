@@ -6,7 +6,7 @@ import { extension_settings, renderExtensionTemplateAsync } from '../../../exten
 // 1. CONSTANTES & CONFIGURATION
 // ==========================================
 const MODULE_NAME = "simply_lore_and_tracker";
-const SYSTEM_PROMPT_COMMENT = "***ST_SYSTEM_PROMPT_TRACKER***";
+const SYSTEM_PROMPT_COMMENT = "*Extraction Directive Prompt*";
 
 const DEFAULT_HARVEST_PROMPT = `[END BLOCK TRACKER]
 At the VERY END of every output, after all roleplay text and narration, you MUST generate the status and summary block.
@@ -47,12 +47,14 @@ extension_settings[MODULE_NAME] = extension_settings[MODULE_NAME] || {
     entryPositionSelect: "4-0",
     entryDepth: 4,
     ignoreBudget: false,
+    enableDirectivePrompt: true,
     harvestPrompt: DEFAULT_HARVEST_PROMPT
 };
 
 // ==========================================
 // 2. HELPER NOTIFICATION, PARSING & API REST
 // ==========================================
+
 
 let wiModule = null;
 async function getWiApi() {
@@ -72,6 +74,8 @@ async function getWiApi() {
         reloadEditor: c.reloadWorldInfoEditor || wiModule.reloadEditor
     };
 }
+
+
 
 function showNotification(type, message, title = 'Simply-LoreAndTracker') {
     const toastrObj = window.toastr || (typeof toastr !== 'undefined' ? toastr : null);
@@ -167,35 +171,6 @@ function insertInOrder(currentContent, newBlock, newMsgNum, userTag) {
     return parsedBlocks.map(b => b.text).join("\n\n");
 }
 
-function extractBlockFromMessage(messageText, messageId) {
-    if (!messageText || typeof messageText !== 'string') return null;
-
-    const startBound = parseInt(extension_settings[MODULE_NAME].startMsg, 10) || 1;
-    const endBound = parseInt(extension_settings[MODULE_NAME].endMsg, 10) || Infinity;
-
-    const userTag = (extension_settings[MODULE_NAME].targetTag || "Message #").trim();
-    const escapedTag = escapeRegExp(userTag);
-
-    const regexMarker = new RegExp(`(?:\\*\\*|\\*)*?${escapedTag}\\s*(\\d+)`, 'i');
-    const match = messageText.match(regexMarker);
-    if (!match) return null;
-
-    const detectedMsgNum = parseInt(match[1], 10);
-
-    if (detectedMsgNum < startBound || detectedMsgNum > endBound) {
-        return null;
-    }
-
-    const markerIndex = messageText.search(regexMarker);
-    const extractedBlock = messageText.substring(markerIndex).trim();
-
-    return {
-        msgNum: detectedMsgNum,
-        block: extractedBlock,
-        userTag: userTag
-    };
-}
-
 async function fetchWorldInfoApi(lorebookName) {
     try {
         const response = await fetch('/api/worldinfo/get', {
@@ -210,40 +185,72 @@ async function fetchWorldInfoApi(lorebookName) {
     }
 }
 
+async function createWorldInfoApi(lorebookName) {
+    try {
+        const response = await fetch('/api/worldinfo/create', {
+            method: 'POST',
+            headers: getApiHeaders(),
+            body: JSON.stringify({ name: lorebookName })
+        });
+        const ok = response.ok;
+        if (ok) {
+            await refreshSillyTavernWorldInfoList();
+        }
+        return ok;
+    } catch (err) {
+        console.error(`[Simply-LoreAndTracker] Fetch error during creation:`, err);
+        return false;
+    }
+}
+/*
+// CREATION DE LOREBOOK ok
 async function saveWorldInfoApi(lorebookName, worldInfoData) {
     try {
-        const api = await getWiApi();
+        const response = await fetch('/api/worldinfo/edit', {
+            method: 'POST',
+            headers: getApiHeaders(),
+            body: JSON.stringify({ name: lorebookName, data: worldInfoData })
+        });
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
         
-        // 1. Écriture (Mémoire/Disque)
-        if (typeof api.saveWorldInfo === 'function') {
-            await api.saveWorldInfo(lorebookName, worldInfoData, false);
-        } else {
-            const response = await fetch('/api/worldinfo/edit', {
-                method: 'POST',
-                headers: getApiHeaders(),
-                body: JSON.stringify({ name: lorebookName, data: worldInfoData })
-            });
-            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-        }
-
-        // 2. Événements globaux & rafraîchissement des listes
-        if (typeof eventSource !== 'undefined' && event_types?.WORLDINFO_UPDATED) {
-            eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
-            eventSource.emit('worldinfo_updated', lorebookName, worldInfoData);
-        }
+        eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
+        eventSource.emit('worldinfo_updated', lorebookName, worldInfoData);
         await refreshSillyTavernWorldInfoList();
-
-        // 3. Rechargement du panneau d'édition si ouvert
-        if (typeof api.reloadEditor === 'function') {
-            api.reloadEditor(lorebookName);
-        }
-
         return true;
     } catch (err) {
         console.error(`[Simply-LoreAndTracker] Save error via API edit:`, err);
         return false;
     }
 }
+*/
+
+// content et entre ok meme sur le bouton creation de lorebook ! mais pas les lorebook ou les entry
+async function saveWorldInfoApi(lorebookName, worldInfoData) {
+
+    try {
+        const api = await getWiApi();
+
+        await api.saveWorldInfo(lorebookName, worldInfoData, false);
+        const response = await fetch('/api/worldinfo/edit', {
+            method: 'POST',
+            headers: getApiHeaders(),
+            body: JSON.stringify({ name: lorebookName, data: worldInfoData })
+        });
+        if (typeof eventSource !== 'undefined' && event_types?.WORLDINFO_UPDATED) {
+                eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
+            }
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+
+
+        api.reloadEditor(lorebookName);
+
+        return true;
+
+    } catch (err) {
+        console.error(`[Simply-LoreAndTracker] Save error via API edit:`, err);
+        return false;
+    }
+} 
 
 function toggleDepthInput() {
     const rawVal = $('#auto_memory_position_select').val();
@@ -329,6 +336,7 @@ function createSceneEntryTemplate(uid, comment) {
 
 function createSystemPromptTemplate(uid) {
     const promptText = extension_settings[MODULE_NAME].harvestPrompt || DEFAULT_HARVEST_PROMPT;
+    const isEnabled = extension_settings[MODULE_NAME].enableDirectivePrompt !== false;
     return {
         uid: uid,
         key: [],
@@ -343,7 +351,7 @@ function createSystemPromptTemplate(uid) {
         order: 9999,
         position: 4,
         role: 0,
-        disable: false,
+        disable: !isEnabled,
         ignoreBudget: true,
         excludeRecursion: true,
         preventRecursion: true,
@@ -399,6 +407,7 @@ function syncSystemPromptEntry(worldInfoData) {
         systemEntry.position = 4;
         systemEntry.role = 0;
         systemEntry.depth = 0;
+        systemEntry.disable = !isEnabled;
     }
 }
 
@@ -442,7 +451,11 @@ async function checkCharacterLorebook(forceCreate = false, isCharacterChange = f
 
     if (forceCreate) {
         if (!worldInfoData) {
-            worldInfoData = { name: lorebookName, entries: {} };
+            await createWorldInfoApi(lorebookName);
+            worldInfoData = await fetchWorldInfoApi(lorebookName);
+            if (!worldInfoData) {
+                worldInfoData = { name: lorebookName, entries: {} };
+            }
         }
         if (!worldInfoData.entries) worldInfoData.entries = {};
 
@@ -505,8 +518,26 @@ async function checkCharacterLorebook(forceCreate = false, isCharacterChange = f
 // 4. TRAITEMENT DES MESSAGES & HARVEST
 // ==========================================
 async function processMessage(messageText, messageId) {
-    const extracted = extractBlockFromMessage(messageText, messageId);
-    if (!extracted) return false;
+    if (!messageText || typeof messageText !== 'string') return false;
+
+    const startBound = parseInt(extension_settings[MODULE_NAME].startMsg, 10) || 1;
+    const endBound = parseInt(extension_settings[MODULE_NAME].endMsg, 10) || Infinity;
+
+    const userTag = (extension_settings[MODULE_NAME].targetTag || "Message #").trim();
+    const escapedTag = escapeRegExp(userTag);
+
+    const regexMarker = new RegExp(`(?:\\*\\*|\\*)*?${escapedTag}\\s*(\\d+)`, 'i');
+    const match = messageText.match(regexMarker);
+    if (!match) return false;
+
+    const detectedMsgNum = parseInt(match[1], 10);
+
+    if (detectedMsgNum < startBound || detectedMsgNum > endBound) {
+        return false;
+    }
+
+    const markerIndex = messageText.search(regexMarker);
+    const extractedBlock = messageText.substring(markerIndex).trim();
 
     let targetData = await checkCharacterLorebook(false, false, false);
     if (!targetData) {
@@ -550,13 +581,17 @@ async function processMessage(messageText, messageId) {
     }
 
     const oldContent = targetEntry.content || "";
-    const newContent = insertInOrder(oldContent, extracted.block, extracted.msgNum, extracted.userTag);
+    const newContent = insertInOrder(oldContent, extractedBlock, detectedMsgNum, userTag);
 
     if (oldContent === newContent) return false;
 
     targetEntry.content = newContent;
 
-    return await saveWorldInfoApi(lorebookName, worldInfoData);
+    const saved = await saveWorldInfoApi(lorebookName, worldInfoData);
+    if (saved) {
+        return true;
+    }
+    return false;
 }
 
 async function harvestAllMessages() {
@@ -568,81 +603,25 @@ async function harvestAllMessages() {
         return;
     }
 
-    // 1. Récupération / Création du lorebook UNE SEULE FOIS au départ
-    let targetData = await checkCharacterLorebook(false, false, false);
-    if (!targetData) {
-        targetData = await checkCharacterLorebook(true, false, false);
-    }
-    if (!targetData) {
-        showNotification('error', "Could not access character lorebook.");
-        return;
-    }
-
-    const { lorebookName, worldInfoData } = targetData;
-    if (!worldInfoData.entries) worldInfoData.entries = {};
-
-    const targetComment = (extension_settings[MODULE_NAME].targetComment || "actual scene").toLowerCase().trim();
-
-    let targetEntry = null;
-    for (const key in worldInfoData.entries) {
-        const entry = worldInfoData.entries[key];
-        if (entry && entry.comment && entry.comment.toLowerCase().trim() === targetComment) {
-            targetEntry = entry;
-            break;
-        }
-    }
-
-    if (!targetEntry) {
-        const newKey = generateSequentialKey(worldInfoData.entries);
-        const uid = parseInt(newKey, 10);
-        targetEntry = createSceneEntryTemplate(uid, extension_settings[MODULE_NAME].targetComment || "actual scene");
-        worldInfoData.entries[newKey] = targetEntry;
-    }
-
-    const orderVal = parseInt(extension_settings[MODULE_NAME].entryOrder, 10);
-    const { position: positionVal, role: roleVal } = parsePositionAndRole(extension_settings[MODULE_NAME].entryPositionSelect ?? "4-0");
-    const rawDepth = parseInt(extension_settings[MODULE_NAME].entryDepth ?? 4, 10);
-    const isAtD = (positionVal === 4);
-
-    targetEntry.order = isNaN(orderVal) ? 100 : orderVal;
-    targetEntry.position = positionVal;
-    targetEntry.role = isAtD ? roleVal : 0;
-    targetEntry.depth = isAtD ? (isNaN(rawDepth) ? 4 : rawDepth) : 0;
-    if (extension_settings[MODULE_NAME].ignoreBudget !== undefined) {
-        targetEntry.ignoreBudget = !!extension_settings[MODULE_NAME].ignoreBudget;
-    }
-
     const startBound = parseInt(extension_settings[MODULE_NAME].startMsg, 10) || 1;
     const endBoundInput = parseInt(extension_settings[MODULE_NAME].endMsg, 10);
     const endBound = isNaN(endBoundInput) ? chat.length : endBoundInput;
 
+    let count = 0;
     const startIndex = Math.max(0, startBound - 1);
     const endIndex = Math.min(chat.length, endBound);
 
-    let count = 0;
-    let currentContent = targetEntry.content || "";
-
-    // 2. Accumulation pure en mémoire sans aucun appel API dans la boucle
     for (let i = startIndex; i < endIndex; i++) {
         const msg = chat[i];
         const textContent = msg?.mes || msg?.text;
 
         if (msg && !msg.is_user && textContent) {
-            const extracted = extractBlockFromMessage(textContent, i + 1);
-            if (extracted) {
-                const updatedContent = insertInOrder(currentContent, extracted.block, extracted.msgNum, extracted.userTag);
-                if (updatedContent !== currentContent) {
-                    currentContent = updatedContent;
-                    count++;
-                }
-            }
+            const added = await processMessage(textContent, i + 1);
+            if (added) count++;
         }
     }
 
-    // 3. Sauvegarde unique et rafraîchissement global à la toute fin
     if (count > 0) {
-        targetEntry.content = currentContent;
-        await saveWorldInfoApi(lorebookName, worldInfoData);
         showNotification('success', `${count} summary block(s) harvested!`);
     } else {
         showNotification('info', "Memory is already up to date.");

@@ -7,56 +7,56 @@
     <div class="inline-drawer-content">
       
       <!-- Active Lorebook Name -->
-      <label for="auto_memory_current_lorebook">Active Lorebook Name:</label>
-      <input type="text" id="auto_memory_current_lorebook" class="text_pole" placeholder="e.g. slt_mem_CharacterName" />
+      <label for="auto_memory_current_lorebook" title="Name of the lorebook currently linked to the active character.">Active Lorebook Name:</label>
+      <input type="text" id="auto_memory_current_lorebook" class="text_pole" placeholder="e.g. slt_mem_CharacterName" title="Name of the lorebook currently linked to the active character." />
 
       <!-- Status Indicators -->
       <div style="display: flex; gap: 8px; margin-top: 8px; font-size: 0.85em; align-items: center; justify-content: space-around; background: rgba(0,0,0,0.15); padding: 5px 8px; border-radius: 4px; white-space: nowrap;">
-        <span id="badge_lb_status" style="display: inline-flex; align-items: center; gap: 4px;">
+        <span id="badge_lb_status" style="display: inline-flex; align-items: center; gap: 4px;" title="Indicates whether the character lorebook exists.">
           <span class="status-dot" style="color: #ff5252;">●</span> Lorebook
         </span>
-        <span id="badge_entry_status" style="display: inline-flex; align-items: center; gap: 4px;">
+        <span id="badge_entry_status" style="display: inline-flex; align-items: center; gap: 4px;" title="Indicates whether the active scene summary entry exists inside the lorebook.">
           <span class="status-dot" style="color: #ff5252;">●</span> Scene Entry
         </span>
-        <span id="badge_prompt_status" style="display: inline-flex; align-items: center; gap: 4px;">
+        <span id="badge_prompt_status" style="display: inline-flex; align-items: center; gap: 4px;" title="Indicates whether the Extraction Directive Prompt entry exists in the lorebook.">
           <span class="status-dot" style="color: #ff5252;">●</span> System Prompt
         </span>
       </div>
 
-            <!-- Action Button -->
-      <div class="menu_button margin-top-10" id="auto_memory_create_lb_btn" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; width: 100%; box-sizing: border-box; white-space: nowrap; font-size: 0.9em;">
+      <!-- Action Button -->
+      <div class="menu_button margin-top-10" id="auto_memory_create_lb_btn" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; width: 100%; box-sizing: border-box; white-space: nowrap; font-size: 0.9em;" title="Force creation or synchronization of the character lorebook and its internal entries.">
         <i class="fa-solid fa-wand-magic-sparkles"></i> Synchronize / Create Entries
       </div>
 
-      <label for="auto_memory_comment_input" class="margin-top-10">Target Entry Comment:</label>
-      <input type="text" id="auto_memory_comment_input" class="text_pole" value="actual scene" />
+      <label for="auto_memory_comment_input" class="margin-top-10" title="Name or comment of the current scene/arc (e.g. '1 - Beginning', '2 - In the tavern'). Summaries will be appended here.">Target Entry Comment:</label>
+      <input type="text" id="auto_memory_comment_input" class="text_pole" value="actual scene" title="Name or comment of the current scene/arc (e.g. '1 - Beginning', '2 - In the tavern'). Summaries will be appended here." />
 
       <!-- Message Range -->
       <div style="display: flex; gap: 10px; margin-top: 8px;">
         <div style="flex: 1;">
-          <label for="auto_memory_start_input">Start (Msg #):</label>
-          <input type="number" id="auto_memory_start_input" class="text_pole" placeholder="e.g. 1" min="1" />
+          <label for="auto_memory_start_input" title="First message number in history to include during harvesting.">Start (Msg #):</label>
+          <input type="number" id="auto_memory_start_input" class="text_pole" placeholder="e.g. 1" min="1" title="First message number in history to include during harvesting." />
         </div>
         <div style="flex: 1;">
-          <label for="auto_memory_end_input">End (Msg #):</label>
-          <input type="number" id="auto_memory_end_input" class="text_pole" placeholder="Blank = End" min="1" />
+          <label for="auto_memory_end_input" title="Last message number to harvest (leave empty to scan until current last message).">End (Msg #):</label>
+          <input type="number" id="auto_memory_end_input" class="text_pole" placeholder="Blank = End" min="1" title="Last message number to harvest (leave empty to scan until current last message)." />
         </div>
       </div>
 
-                  <!-- Harvest Button -->
-      <div class="menu_button margin-top-10" id="auto_memory_run_all_btn" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; width: 100%; box-sizing: border-box; white-space: nowrap; font-size: 0.9em;">
+      <!-- Harvest Button -->
+      <div class="menu_button margin-top-10" id="auto_memory_run_all_btn" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; width: 100%; box-sizing: border-box; white-space: nowrap; font-size: 0.9em;" title="Scan full chat history and aggregate all summary blocks into the lorebook in one batch.">
         <i class="fa-solid fa-arrows-rotate"></i> Harvest Messages
       </div>
 
       <!-- Settings Order / Position / Depth -->
       <div style="display: flex; gap: 10px; margin-top: 8px;">
         <div style="flex: 1;">
-          <label for="auto_memory_order_input">Insertion Order:</label>
-          <input type="number" id="auto_memory_order_input" class="text_pole" value="100" />
+          <label for="auto_memory_order_input" title="Context insertion priority. Higher values give greater weight and precedence when ordering entries.">Insertion Order:</label>
+          <input type="number" id="auto_memory_order_input" class="text_pole" value="100" title="Context insertion priority. Higher values give greater weight and precedence when ordering entries." />
         </div>
         <div style="flex: 1.5;">
-          <label for="auto_memory_position_select">Insertion Position:</label>
-          <select id="auto_memory_position_select" class="text_pole">
+          <label for="auto_memory_position_select" title="Prompt insertion target position in the prompt building sequence.">Insertion Position:</label>
+          <select id="auto_memory_position_select" class="text_pole" title="Prompt insertion target position in the prompt building sequence.">
             <option value="0">-↑ Char : Before Char Defs</option>
             <option value="1">-↓ Char : After Char Defs</option>
             <option value="5">-↑ EM : Before Example Messages</option>
@@ -70,37 +70,40 @@
           </select>
         </div>
         <div style="flex: 1;">
-          <label for="auto_memory_depth_input">Depth (if @D):</label>
-          <input type="number" id="auto_memory_depth_input" class="text_pole" value="4" min="0" />
+          <label for="auto_memory_depth_input" title="Injection depth (number of messages from bottom) when position is set to At Depth (@D).">Depth (if @D):</label>
+          <input type="number" id="auto_memory_depth_input" class="text_pole" value="4" min="0" title="Injection depth (number of messages from bottom) when position is set to At Depth (@D)." />
         </div>
       </div>
 
-            <!-- Option Budget -->
+      <!-- Option Budget -->
       <div class="margin-top-10" style="display: flex; align-items: center; gap: 8px;">
-        <input type="checkbox" id="auto_memory_budget_checkbox" style="margin: 0;" />
-        <label for="auto_memory_budget_checkbox" style="margin: 0; cursor: pointer;">Ignore budget (bypass token limit)</label>
+        <input type="checkbox" id="auto_memory_budget_checkbox" style="margin: 0;" title="Bypass context token budget limits to ensure this memory entry is never truncated." />
+        <label for="auto_memory_budget_checkbox" style="margin: 0; cursor: pointer;" title="Bypass context token budget limits to ensure this memory entry is never truncated.">Ignore budget (bypass token limit)</label>
       </div>
 
       <!-- Prefix & Tag -->
       <div style="display: flex; gap: 10px; margin-top: 8px;">
         <div style="flex: 1;">
-          <label for="auto_memory_prefix_input">Lorebook Prefix:</label>
-          <input type="text" id="auto_memory_prefix_input" class="text_pole" value="slt_mem_" placeholder="e.g. slt_mem_" />
+          <label for="auto_memory_prefix_input" title="Prefix to distinguish generated memory lorebooks from standard ones. Used for automatic lorebook detection. Can be left empty.">Lorebook Prefix:</label>
+          <input type="text" id="auto_memory_prefix_input" class="text_pole" value="slt_mem_" placeholder="e.g. slt_mem_" title="Prefix to distinguish generated memory lorebooks from standard ones. Used for automatic lorebook detection. Can be left empty." />
         </div>
         <div style="flex: 1;">
-          <label for="auto_memory_tag_input">Target Tag:</label>
-          <input type="text" id="auto_memory_tag_input" class="text_pole" value="Message #" placeholder="e.g. Message #" />
+          <label for="auto_memory_tag_input" title="Marker tag indicating the exact starting point from which the memory block is extracted (default: Message #).">Target Tag:</label>
+          <input type="text" id="auto_memory_tag_input" class="text_pole" value="Message #" placeholder="e.g. Message #" title="Marker tag indicating the exact starting point from which the memory block is extracted (default: Message #)." />
         </div>
       </div>
 
-      <!-- Directive Prompt avec bouton Reset stylisé -->
+      <!-- Directive Prompt avec Checkbox d'activation & bouton Reset -->
       <div class="margin-top-10" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-        <label for="auto_memory_prompt_textarea" style="margin: 0;">Extraction Directive Prompt:</label>
-        <div id="auto_memory_reset_prompt_btn" class="menu_button" style="padding: 2px 8px; font-size: 0.8em; margin: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Restore Default Prompt">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <input type="checkbox" id="auto_memory_enable_prompt_checkbox" style="margin: 0;" title="Active or disabled to keep so you can create and use a custom general constraint." />
+          <label for="auto_memory_enable_prompt_checkbox" style="margin: 0; cursor: pointer;" title="Directive system prompt injected into the LLM context to enforce tracker generation at the end of every reply. You can customize this prompt, but ensure it keeps the {{lastMessageId}} tag—the extension relies on this exact marker to locate and extract the summary block.">Extraction Directive Prompt</label>
+        </div>
+        <div id="auto_memory_reset_prompt_btn" class="menu_button" style="padding: 2px 8px; font-size: 0.8em; margin: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Reset the directive prompt to its original factory template.">
           <i class="fa-solid fa-rotate-left"></i> Reset
         </div>
       </div>
-      <textarea id="auto_memory_prompt_textarea" class="text_pole" rows="8" placeholder="System prompt instructions..." style="margin-top: 4px; width: 100%; box-sizing: border-box;"></textarea>
+      <textarea id="auto_memory_prompt_textarea" class="text_pole" rows="8" placeholder="System prompt instructions..." style="margin-top: 4px; width: 100%; box-sizing: border-box;" title="Directive system prompt injected into the LLM context to enforce tracker generation at the end of every reply. You can customize this prompt, but ensure it keeps the {{lastMessageId}} tag—the extension relies on this exact marker to locate and extract the summary block."></textarea>
  
     </div>
   </div>
