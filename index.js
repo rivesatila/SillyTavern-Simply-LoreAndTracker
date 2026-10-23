@@ -202,27 +202,7 @@ async function createWorldInfoApi(lorebookName) {
         return false;
     }
 }
-/*
-// CREATION DE LOREBOOK ok
-async function saveWorldInfoApi(lorebookName, worldInfoData) {
-    try {
-        const response = await fetch('/api/worldinfo/edit', {
-            method: 'POST',
-            headers: getApiHeaders(),
-            body: JSON.stringify({ name: lorebookName, data: worldInfoData })
-        });
-        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-        
-        eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
-        eventSource.emit('worldinfo_updated', lorebookName, worldInfoData);
-        await refreshSillyTavernWorldInfoList();
-        return true;
-    } catch (err) {
-        console.error(`[Simply-LoreAndTracker] Save error via API edit:`, err);
-        return false;
-    }
-}
-*/
+
 
 // content et entre ok meme sur le bouton creation de lorebook ! mais pas les lorebook ou les entry
 async function saveWorldInfoApi(lorebookName, worldInfoData) {
@@ -424,6 +404,9 @@ async function checkCharacterLorebook(forceCreate = false, isCharacterChange = f
         updateStatusDot('badge_lb_status', false);
         updateStatusDot('badge_entry_status', false);
         updateStatusDot('badge_prompt_status', false);
+        $('#auto_memory_link_status')
+            .css({ 'color': '#ff5252', 'text-shadow': '0 0 5px rgba(255, 82, 82, 0.4)' })
+            .html('<i class="fa-solid fa-triangle-exclamation"></i> lorebook not linked');
         return null;
     }
 
@@ -433,6 +416,9 @@ async function checkCharacterLorebook(forceCreate = false, isCharacterChange = f
         updateStatusDot('badge_lb_status', false);
         updateStatusDot('badge_entry_status', false);
         updateStatusDot('badge_prompt_status', false);
+        $('#auto_memory_link_status')
+            .css({ 'color': '#ff5252', 'text-shadow': '0 0 5px rgba(255, 82, 82, 0.4)' })
+            .html('<i class="fa-solid fa-triangle-exclamation"></i> lorebook not linked');
         return null;
     }
 
@@ -506,13 +492,49 @@ async function checkCharacterLorebook(forceCreate = false, isCharacterChange = f
     updateStatusDot('badge_entry_status', entryExists);
     updateStatusDot('badge_prompt_status', promptExists);
 
-    if (lbExists && character.data && character.data.extensions) {
-        if (character.data.extensions.world !== lorebookName) {
-            character.data.extensions.world = lorebookName;
-            if (typeof context.saveCharacterDebounced === 'function') {
-                context.saveCharacterDebounced();
-            }
+    // --- VÉRIFICATION DE LA LIAISON AU PERSONNAGE (A SA PLACE ICI) ---
+    let isLinked = false;
+
+    if (character) {
+        // 1. Emplacement standard principal (character.data.world)
+        const charWorld = character.data?.world || character.world;
+        
+        // 2. Emplacements pour lorebooks secondaires/supplémentaires selon la version de ST
+        const charWorldInfo = character.data?.world_info || character.world_info;
+        const extWorld = character?.data?.character_book?.name;
+        const extWorldInfo = character.data?.extensions?.world_info;
+
+        // Vérification sur le lorebook principal (string)
+        if (typeof charWorld === 'string' && charWorld === lorebookName) {
+            isLinked = true;
+        } 
+        // Vérification si c'est un tableau
+        else if (Array.isArray(charWorld) && charWorld.includes(lorebookName)) {
+            isLinked = true;
+        } 
+        else if (Array.isArray(charWorldInfo) && charWorldInfo.includes(lorebookName)) {
+            isLinked = true;
         }
+        else if (typeof extWorld === 'string' && extWorld === lorebookName) {
+            isLinked = true;
+        }
+        else if (Array.isArray(extWorld) && extWorld.includes(lorebookName)) {
+            isLinked = true;
+        }
+        else if (Array.isArray(extWorldInfo) && extWorldInfo.includes(lorebookName)) {
+            isLinked = true;
+        }
+    }
+
+    const $linkStatus = $('#auto_memory_link_status');
+    if (isLinked) {
+        $linkStatus
+            .css({ 'color': '#00e676', 'text-shadow': '0 0 5px rgba(0, 230, 118, 0.4)' })
+            .html('<i class="fa-solid fa-link"></i> WorldBook active');
+    } else {
+        $linkStatus
+            .css({ 'color': '#ff5252', 'text-shadow': '0 0 5px rgba(255, 82, 82, 0.4)' })
+            .html('<i class="fa-solid fa-triangle-exclamation"></i> WorldBook not linked (ALPHA only world book checked)');
     }
 
     return lbExists ? { lorebookName, worldInfoData } : null;
@@ -731,6 +753,11 @@ jQuery(async () => {
             await harvestAllMessages();
         });
 
+        $('#auto_memory_link_status').on('click', async function () {
+            await checkCharacterLorebook(false, false, false);
+            showNotification('info', "Character lorebook link checked.");
+        });
+
         $('#auto_memory_create_lb_btn').on('click', async () => {
             const res = await checkCharacterLorebook(true, false, false);
             if (res) {
@@ -746,12 +773,26 @@ jQuery(async () => {
             await checkCharacterLorebook(false, false, false);
         };
 
+        const handleLorebookLinkUpdate = async () => {
+            await checkCharacterLorebook(false, false, false);
+        };
+
         if (event_types.CHARACTER_SELECTED) {
             eventSource.on(event_types.CHARACTER_SELECTED, handleCharacterSwitch);
         }
         if (event_types.CHAT_CHANGED) {
             eventSource.on(event_types.CHAT_CHANGED, handleCharacterSwitch);
         }
+
+        // --- AJOUTS ICI POUR METTRE À JOUR L'INDICATEUR EN DIRECT ---
+        if (event_types.WORLDINFO_SETTINGS_UPDATED) {
+            eventSource.on(event_types.WORLDINFO_SETTINGS_UPDATED, handleLorebookLinkUpdate);
+        }
+        if (event_types.CHARACTER_UPDATED) {
+            eventSource.on(event_types.CHARACTER_UPDATED, handleLorebookLinkUpdate);
+        }
+        // Événement alternatif émis lors des modifications de carte
+        eventSource.on('worldinfo_settings_updated', handleLorebookLinkUpdate);
 
         const handleMessageEvent = async (messageId) => {
             const chat = SillyTavern.getContext().chat;
