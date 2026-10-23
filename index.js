@@ -1,7 +1,6 @@
 import { eventSource, event_types, getRequestHeaders } from '../../../../script.js';
-import { updateWorldInfoList, loadWorldInfo, selected_world_info, saveWorldInfo} from '../../../world-info.js';
+import { updateWorldInfoList } from '../../../world-info.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../../extensions.js';
-
 
 // ==========================================
 // 1. CONSTANTES & CONFIGURATION
@@ -54,6 +53,7 @@ extension_settings[MODULE_NAME] = extension_settings[MODULE_NAME] || {
 // ==========================================
 // 2. HELPER NOTIFICATION, PARSING & API REST
 // ==========================================
+
 
 let wiModule = null;
 async function getWiApi() {
@@ -109,25 +109,15 @@ function parsePositionAndRole(val) {
     return { position: parseInt(strVal, 10), role: 0 };
 }
 
-async function refreshSillyTavernWorldInfoList(lorebookName = null) {
+async function refreshSillyTavernWorldInfoList() {
     try {
         if (typeof updateWorldInfoList === 'function') {
             await updateWorldInfoList();
         } else if (typeof SillyTavern.getContext()?.updateWorldInfoList === 'function') {
             await SillyTavern.getContext().updateWorldInfoList();
         }
-
-        // Force le re-rendu visuel de l'éditeur World Info natif si le livre est actuellement sélectionné
-        const $wiSelect = $('#world_info_selection');
-        if ($wiSelect.length && lorebookName) {
-            if ($wiSelect.val() === lorebookName) {
-                $wiSelect.trigger('change');
-            } else {
-                $wiSelect.val(lorebookName).trigger('change');
-            }
-        }
     } catch (err) {
-        console.warn('[Simply-LoreAndTracker] Could not refresh UI WorldInfo list/view:', err);
+        console.warn('[Simply-LoreAndTracker] Could not refresh UI WorldInfo list:', err);
     }
 }
 
@@ -201,51 +191,68 @@ async function createWorldInfoApi(lorebookName) {
             headers: getApiHeaders(),
             body: JSON.stringify({ name: lorebookName })
         });
-        
-        if (response.ok) {
-            const api = await getWiApi();
-            // Actualise le menu déroulant avec le nouveau fichier
-            if (typeof api.updateWorldInfoList === 'function') {
-                await api.updateWorldInfoList();
-            }
+        const ok = response.ok;
+        if (ok) {
+            await refreshSillyTavernWorldInfoList();
         }
-        return response.ok;
+        return ok;
     } catch (err) {
-        console.error(`[Simply-LoreAndTracker] Erreur de création :`, err);
+        console.error(`[Simply-LoreAndTracker] Fetch error during creation:`, err);
         return false;
     }
 }
-
+/*
+// CREATION DE LOREBOOK ok
 async function saveWorldInfoApi(lorebookName, worldInfoData) {
     try {
-        const api = await getWiApi();
+        const response = await fetch('/api/worldinfo/edit', {
+            method: 'POST',
+            headers: getApiHeaders(),
+            body: JSON.stringify({ name: lorebookName, data: worldInfoData })
+        });
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
         
+        eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
+        eventSource.emit('worldinfo_updated', lorebookName, worldInfoData);
+        await refreshSillyTavernWorldInfoList();
+        return true;
+    } catch (err) {
+        console.error(`[Simply-LoreAndTracker] Save error via API edit:`, err);
+        return false;
+    }
+}
+*/
+
+// content et entre ok meme sur le bouton creation de lorebook ! mais pas les lorebook ou les entry
+async function saveWorldInfoApi(lorebookName, worldInfoData) {
+
+    try {
+        const api = await getWiApi();
         if (typeof api.saveWorldInfo === 'function') {
-            // Utilise la fonction native qui gère l'API et les événements internes
-            // Le dernier paramètre `false` évite parfois un rechargement forcé lourd de toute la liste
             await api.saveWorldInfo(lorebookName, worldInfoData, false);
         } else {
-            // Fallback si vraiment la fonction native est introuvable
             const response = await fetch('/api/worldinfo/edit', {
                 method: 'POST',
                 headers: getApiHeaders(),
                 body: JSON.stringify({ name: lorebookName, data: worldInfoData })
             });
             if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-            eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
+            if (typeof eventSource !== 'undefined' && event_types?.WORLDINFO_UPDATED) {
+                eventSource.emit(event_types.WORLDINFO_UPDATED, lorebookName, worldInfoData);
+            }
         }
 
-        // Met à jour l'UI proprement et sans conflit
         if (typeof api.reloadEditor === 'function') {
             api.reloadEditor(lorebookName);
         }
 
         return true;
+
     } catch (err) {
-        console.error(`[Simply-LoreAndTracker] Erreur de sauvegarde :`, err);
+        console.error(`[Simply-LoreAndTracker] Save error via API edit:`, err);
         return false;
     }
-}
+} 
 
 function toggleDepthInput() {
     const rawVal = $('#auto_memory_position_select').val();
