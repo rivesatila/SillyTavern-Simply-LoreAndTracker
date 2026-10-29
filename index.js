@@ -35,7 +35,7 @@ CRITICAL: Do NOT attempt to calculate, increment, or guess message numbers. You 
 extension_settings[MODULE_NAME] = extension_settings[MODULE_NAME] || {
     prefix: "slt_mem_",
     targetComment: "actual scene",
-    targetTag: "Message #",
+    targetTag: "SUMMARY #",
     startMsg: 1,
     endMsg: "",
     entryOrder: 100,
@@ -540,6 +540,12 @@ async function checkCharacterLorebook(forceCreate = false, isCharacterChange = f
 // ==========================================
 async function processMessage(messageText, messageId) {
     if (!messageText || typeof messageText !== 'string') return false;
+
+    // Si le message qu'on essaie de parser est le tout dernier du chat, on l'ignore
+    const context = SillyTavern.getContext();
+    if (messageId >= context.chat.length-1) {
+        return false;
+    }
 
     const startBound = parseInt(extension_settings[MODULE_NAME].startMsg, 10) || 1;
     const endBound = parseInt(extension_settings[MODULE_NAME].endMsg, 10) || Infinity;
