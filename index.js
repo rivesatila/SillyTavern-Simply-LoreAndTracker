@@ -797,10 +797,28 @@ jQuery(async () => {
 
         const handleMessageEvent = async (messageId) => {
             const chat = SillyTavern.getContext().chat;
-            const msg = chat?.[messageId];
-            const textContent = msg?.mes || msg?.text;
-            if (textContent) {
-                await processMessage(textContent, messageId);
+            if (!chat || chat.length === 0) return;
+
+            // messageId est l'index du message qui vient d'être généré (ex: index 10).
+            // La règle N-1 stipule que l'on doit capturer le message précédent (ex: index 9).
+            // Attention : on recule jusqu'au dernier message de l'IA (on ignore l'humain).
+            
+            let targetId = messageId - 1;
+            
+            // Si le message N-1 était de l'humain, on recule d'un cran supplémentaire (N-2)
+            // pour capturer le dernier résumé généré par l'IA.
+            if (targetId >= 0 && chat[targetId].is_user) {
+                targetId--; 
+            }
+
+            if (targetId >= 0) {
+                const msgToProcess = chat[targetId];
+                const textContent = msgToProcess?.mes || msgToProcess?.text;
+                
+                if (textContent && !msgToProcess.is_user) {
+                    // On lance le traitement sur le message précédent
+                    await processMessage(textContent, targetId);
+                }
             }
         };
 
