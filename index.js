@@ -8,33 +8,28 @@ import { extension_settings, renderExtensionTemplateAsync } from '../../../exten
 const MODULE_NAME = "simply_lore_and_tracker";
 const SYSTEM_PROMPT_COMMENT = "*Extraction Directive Prompt*";
 
-const DEFAULT_HARVEST_PROMPT = `[END BLOCK TRACKER]
-At the VERY END of every output, after all roleplay text and narration, you MUST generate the status and summary block.
-Never place this block at the top or in the middle of your reply.
+const DEFAULT_HARVEST_PROMPT = `[SYSTEM DIRECTIVE: MANDATORY TRACKER FOOTER]
+You MUST append a status block at the absolute end of your response, after a horizontal rule.
+CRITICAL: Do NOT attempt to calculate, increment, or guess message numbers. You MUST copy the exact string {{lastMessageId}} literal tag as provided below.
 
-[BLOCK FORMAT]
-Format the final block exactly as follows (ensure a blank line before and after the horizontal rule):
-
-[Your story text ends here]
-
-- 
+[REQUIRED FORMAT]
+[
+---
 
 📅 Date & Time: <Day, Date> · 🕒 <Time>
 📍 Location: <Current Place / Area>
 🌤 Weather: <Current Weather & Temperature>
 👥 Characters Present: <Name 1> (<mood>), <Name 2> (<mood>)
 
-
 📝 Context Summary:
-💬 Message #{{lastMessageId}} <1-2 short sentences in English summarizing recent events and the latest exchange between {{user}} and {{char}}>
-- 
+💬 SUMMARY #{{lastMessageId}} <1-2 concise sentences summarizing the key actions and dialogue in this response>
 
-[TRACKER RULES]
-- Grounding: Update date, time, location, and weather dynamically based on story progression.
+]
 
-- Cast: List every character present in the current scene along with their current emotional state.
-
-- Summary: Keep the context summary concise and written in English, focusing strictly on immediate actions and narrative hooks.`
+[STRICT RULES]
+1. HARD REQUIREMENT: Copy the exact characters "{{lastMessageId}}" without changing them to numbers or calculating the next message ID.
+2. SUMMARY LIMIT: Maximum 2 sentences. Focus exclusively on concrete events happening in the current turn.
+3. SEPARATION: Always keep a single horizontal rule (-) before and after the block.`
 ;
 
 extension_settings[MODULE_NAME] = extension_settings[MODULE_NAME] || {
