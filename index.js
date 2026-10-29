@@ -29,7 +29,7 @@ CRITICAL: Do NOT attempt to calculate, increment, or guess message numbers. You 
 [STRICT RULES]
 1. HARD REQUIREMENT: Copy the exact characters "{{lastMessageId}}" without changing them to numbers or calculating the next message ID.
 2. SUMMARY LIMIT: Maximum 2 sentences. Focus exclusively on concrete events happening in the current turn.
-3. SEPARATION: Always keep a single horizontal rule (-) before and after the block.`
+3. SEPARATION: Always keep a single horizontal rule (-) before the block.`
 ;
 
 extension_settings[MODULE_NAME] = extension_settings[MODULE_NAME] || {
